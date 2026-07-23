@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Professional Vocabulary Notebook</title>
+<style>
+:root{
+  --bg:#f4f6fb;--card:#fff;--ink:#1c2434;--muted:#6f7785;--line:#e7eaf0;
+  --primary:#6658e8;--primary2:#8b5cf6;--green:#10b981;--red:#dc2626;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;padding:30px 18px 24px}
+.wrap{max-width:1180px;margin:auto}
+h1{margin:0 0 6px;font-size:30px}
+.subtitle{opacity:.9}
+.tabs{display:flex;gap:9px;flex-wrap:wrap;margin-top:18px}
+.tabs button{border:0;border-radius:999px;padding:10px 15px;background:#ffffff20;color:#fff;cursor:pointer}
+.tabs button.active{background:#fff;color:var(--primary);font-weight:750}
+main{padding:22px 18px 48px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:13px}
+.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:17px;box-shadow:0 9px 25px #1e293b0a}
+.stat b{display:block;font-size:28px;margin-top:5px}
+.panel{display:none;margin-top:18px}.panel.active{display:block}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input,select,textarea{border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:#fff}
+input,select{min-height:42px} textarea{width:100%;min-height:85px;resize:vertical}
+button,.button{border:0;border-radius:10px;padding:10px 13px;cursor:pointer;font-weight:680}
+.primary{background:var(--primary);color:#fff}.secondary{background:#efefff;color:#5146c9}.danger{background:#fff0f2;color:#be123c}
+.tablewrap{overflow:auto}
+table{width:100%;border-collapse:collapse;min-width:960px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:13px;color:var(--muted);background:#fafbfc}
+.word{font-size:18px;font-weight:820}.speak{margin-top:7px;background:#f3f0ff;color:#5b4bd8;border:0;border-radius:999px;padding:6px 10px;font-size:12px;cursor:pointer}.speak:hover{background:#e9e4ff}.ipa,.small{font-size:13px;color:var(--muted)}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-size:12px;background:#eef2ff;color:#4f46e5}
+.badge.reading{background:#ecfdf5;color:#047857}
+.modal{display:none;position:fixed;inset:0;background:#0f172a75;align-items:center;justify-content:center;padding:18px;z-index:10}
+.modal.show{display:flex}.modalbox{width:min(760px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:18px;padding:22px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.full{grid-column:1/-1}
+.center{text-align:center;padding:34px 16px}
+.prompt{font-size:19px;color:var(--muted);margin:20px auto;max-width:760px}
+.answer{font-size:26px;text-align:center;width:min(540px,100%);padding:15px}
+.result{margin-top:14px;font-weight:750}.correct{color:var(--green)}.wrong{color:var(--red)}
+.flash{min-height:260px;display:flex;align-items:center;justify-content:center;text-align:center;border:2px dashed var(--line);cursor:pointer}
+.flash h2{font-size:40px;margin:0 0 8px}.hidden{display:none}
+.note{padding:12px;border-radius:12px;background:#fafbff;color:var(--muted);font-size:13px}
+@media(max-width:850px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.stats{grid-template-columns:1fr}.formgrid{grid-template-columns:1fr}.full{grid-column:auto}h1{font-size:25px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Professional Vocabulary Notebook</h1>
+    <div class="subtitle">记录生词 · 专业分类 · 默写训练 · 闪卡复习</div>
+    <div class="tabs">
+      <button class="active" data-tab="notebook">专业单词本</button>
+      <button data-tab="dictation">默写本</button>
+      <button data-tab="flashcards">闪卡复习</button>
+      <button data-tab="backup">导入与备份</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="stats">
+    <div class="stat">全部单词<b id="totalStat">0</b></div>
+    <div class="stat">Listening<b id="listeningStat">0</b></div>
+    <div class="stat">Reading<b id="readingStat">0</b></div>
+    <div class="stat">默写正确率<b id="scoreStat">—</b></div>
+  </section>
+
+  <section id="notebook" class="panel active">
+    <div class="card">
+      <div class="toolbar">
+        <input id="search" placeholder="搜索单词、释义、搭配">
+        <select id="categoryFilter">
+          <option value="">全部分类</option>
+          <option>Listening</option>
+          <option>Reading</option>
+        </select>
+        <input id="sourceFilter" placeholder="来源，例如 C21T4">
+        <button class="primary" onclick="openEditor()">＋ 添加生词</button>
+      </div>
+    </div>
+    <div class="card tablewrap">
+      <table>
+        <thead>
+          <tr><th>单词</th><th>分类/来源</th><th>词性与中文释义</th><th>派生词</th><th>固定搭配</th><th>操作</th></tr>
+        </thead>
+        <tbody id="wordRows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="dictation" class="panel">
+    <div class="card center">
+      <div class="toolbar" style="justify-content:center">
+        <select id="dictCategory">
+          <option value="">全部分类</option><option>Listening</option><option>Reading</option>
+        </select>
+        <select id="dictMode">
+          <option value="meaning">看中文写英文</option>
+          <option value="ipa">看音标写英文</option>
+          <option value="collocations">看固定搭配写核心词</option><option value="audio">听发音写英文</option>
+        </select>
+        <button class="secondary" onclick="nextDictation()">开始 / 下一题</button>
+      </div>
+      <div id="dictPrompt" class="prompt">点击“开始 / 下一题”进入默写</div>
+      <input id="dictAnswer" class="answer" placeholder="输入英文单词" onkeydown="if(event.key==='Enter')checkDictation()">
+      <div><button class="primary" style="margin-top:12px" onclick="checkDictation()">检查答案</button></div>
+      <div id="dictResult" class="result"></div>
+    </div>
+  </section>
+
+  <section id="flashcards" class="panel">
+    <div class="card">
+      <div class="toolbar">
+        <select id="flashCategory">
+          <option value="">全部分类</option><option>Listening</option><option>Reading</option>
+        </select>
+        <button class="secondary" onclick="nextFlashcard()">随机下一张</button>
+        <button class="primary" onclick="flipFlashcard()">翻面</button>
+      </div>
+    </div>
+    <div class="card flash" onclick="flipFlashcard()">
+      <div id="flashFront">
+        <h2 id="flashWord">点击“随机下一张”</h2>
+        <div id="flashIpa" class="ipa"></div><button class="speak" onclick="event.stopPropagation();speakCurrentFlashcard()">🔊 播放发音</button>
+      </div>
+      <div id="flashBack" class="hidden">
+        <div id="flashMeaning"></div>
+        <hr>
+        <div id="flashCollocations" class="small"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="backup" class="panel">
+    <div class="card">
+      <h3>导出与导入</h3>
+      <div class="note">数据保存在当前浏览器的 localStorage 中。建议定期导出 JSON 备份。</div>
+      <div class="toolbar" style="margin-top:14px">
+        <button class="primary" onclick="exportJSON()">导出 JSON</button>
+        <button class="secondary" onclick="exportCSV()">导出 CSV</button>
+        <label class="button secondary">导入 JSON<input type="file" accept=".json" hidden onchange="importJSON(event)"></label>
+        <button class="danger" onclick="resetSample()">恢复示例数据</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="editorModal" class="modal">
+  <div class="modalbox">
+    <h2 id="editorTitle">添加生词</h2>
+    <div class="formgrid">
+      <input id="fWord" placeholder="单词 *">
+      <input id="fIpa" placeholder="英式音标">
+      <select id="fCategory"><option>Listening</option><option>Reading</option></select>
+      <input id="fSource" placeholder="来源，例如 C21T4">
+      <textarea id="fMeaning" class="full" placeholder="词性与中文释义，例如：n. 西装；v. 适合"></textarea>
+      <textarea id="fForms" placeholder="派生词，例如 suitable; suitability"></textarea>
+      <textarea id="fCollocations" placeholder="固定搭配，以分号分隔"></textarea>
+      <textarea id="fNotes" class="full" placeholder="个人笔记"></textarea>
+    </div>
+    <div class="toolbar" style="justify-content:flex-end;margin-top:14px">
+      <button class="secondary" onclick="closeEditor()">取消</button>
+      <button class="primary" onclick="saveWord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const SAMPLE = [{"word": "load", "ipa": "/ləʊd/", "category": "Listening", "source": "C21T4", "meaning": "n. 大量；负荷；装载物；v. 装载；加载", "forms": "loaded; loading", "collocations": "loads of time; carry a heavy load; load data", "notes": ""}, {"word": "motorbike", "ipa": "/ˈməʊtəbaɪk/", "category": "Listening", "source": "C21T4", "meaning": "n. 摩托车", "forms": "", "collocations": "ride a motorbike; motorbike accident", "notes": ""}, {"word": "hairdresser", "ipa": "/ˈheədresə(r)/", "category": "Listening", "source": "C21T4", "meaning": "n. 理发师", "forms": "hairdressing", "collocations": "go to the hairdresser; professional hairdresser", "notes": ""}, {"word": "council", "ipa": "/ˈkaʊnsəl/", "category": "Listening", "source": "C21T4", "meaning": "n. 委员会；市政会", "forms": "councillor", "collocations": "local council; city council; council meeting", "notes": ""}, {"word": "suit", "ipa": "/suːt/", "category": "Listening", "source": "C21T4", "meaning": "n. 西装；套装；v. 适合；满足", "forms": "suitable; suitability", "collocations": "wear a suit; suit somebody; suit your needs", "notes": ""}, {"word": "laptop", "ipa": "/ˈlæptɒp/", "category": "Listening", "source": "C21T4", "meaning": "n. 笔记本电脑", "forms": "", "collocations": "use a laptop; laptop computer", "notes": ""}, {"word": "spare part", "ipa": "/speə pɑːt/", "category": "Listening", "source": "C21T4", "meaning": "n. 备用零件；备件", "forms": "", "collocations": "replace a spare part; spare parts supplier", "notes": ""}, {"word": "coffee shop", "ipa": "/ˈkɒfi ʃɒp/", "category": "Listening", "source": "C21T4", "meaning": "n. 咖啡店", "forms": "", "collocations": "local coffee shop; open a coffee shop", "notes": ""}, {"word": "plant", "ipa": "/plɑːnt/", "category": "Listening", "source": "C21T4", "meaning": "n. 植物；工厂；v. 种植", "forms": "planting; planted", "collocations": "plant a tree; power plant; indoor plant", "notes": ""}, {"word": "cinema", "ipa": "/ˈsɪnəmə/", "category": "Listening", "source": "C21T4", "meaning": "n. 电影院；电影艺术", "forms": "cinematic", "collocations": "go to the cinema; cinema industry", "notes": ""}, {"word": "breakout area", "ipa": "/ˈbreɪkaʊt ˈeəriə/", "category": "Listening", "source": "C21T4", "meaning": "n. 休息交流区；分组讨论区", "forms": "", "collocations": "conference breakout area; informal breakout area", "notes": ""}, {"word": "sponsor", "ipa": "/ˈspɒnsə(r)/", "category": "Listening", "source": "C21T4", "meaning": "n. 赞助商；v. 赞助", "forms": "sponsorship; sponsored", "collocations": "sponsor an event; corporate sponsor; official sponsor", "notes": ""}, {"word": "presence", "ipa": "/ˈprezəns/", "category": "Listening", "source": "C21T4", "meaning": "n. 存在；出席；在场", "forms": "present", "collocations": "have a strong presence; physical presence; online presence", "notes": ""}, {"word": "scheme", "ipa": "/skiːm/", "category": "Listening", "source": "C21T4", "meaning": "n. 计划；方案；v. 谋划", "forms": "", "collocations": "government scheme; training scheme; launch a scheme", "notes": ""}, {"word": "sensation", "ipa": "/senˈseɪʃn/", "category": "Listening", "source": "C21T4", "meaning": "n. 感觉；轰动", "forms": "sensational", "collocations": "cause a sensation; physical sensation", "notes": ""}, {"word": "donation", "ipa": "/dəʊˈneɪʃn/", "category": "Listening", "source": "C21T4", "meaning": "n. 捐赠；捐款", "forms": "donate; donor", "collocations": "make a donation; charitable donation; blood donation", "notes": ""}, {"word": "employment", "ipa": "/ɪmˈplɔɪmənt/", "category": "Listening", "source": "C21T4", "meaning": "n. 就业；雇用", "forms": "employ; employee; employer; unemployed", "collocations": "full-time employment; employment opportunities; gain employment", "notes": ""}, {"word": "cope", "ipa": "/kəʊp/", "category": "Listening", "source": "C21T4", "meaning": "v. 应付；处理", "forms": "", "collocations": "cope with stress; cope with pressure; cope effectively", "notes": ""}, {"word": "lasting", "ipa": "/ˈlɑːstɪŋ/", "category": "Listening", "source": "C21T4", "meaning": "adj. 持久的；长期的；v. 持续（原形 last）", "forms": "last; long-lasting", "collocations": "lasting impact; lasting impression; lasting relationship", "notes": ""}, {"word": "obstacle", "ipa": "/ˈɒbstəkl/", "category": "Listening", "source": "C21T4", "meaning": "n. 障碍；阻碍", "forms": "", "collocations": "overcome an obstacle; major obstacle; obstacle to progress", "notes": ""}, {"word": "intergenerational", "ipa": "/ˌɪntədʒenəˈreɪʃənəl/", "category": "Listening", "source": "C21T4", "meaning": "adj. 代际的；跨代的", "forms": "generation", "collocations": "intergenerational conflict; intergenerational learning", "notes": ""}, {"word": "solution", "ipa": "/səˈluːʃn/", "category": "Listening", "source": "C21T4", "meaning": "n. 解决方案；溶液", "forms": "solve; soluble", "collocations": "find a solution; practical solution; long-term solution", "notes": ""}, {"word": "apartment block", "ipa": "/əˈpɑːtmənt blɒk/", "category": "Listening", "source": "C21T4", "meaning": "n. 公寓楼", "forms": "", "collocations": "modern apartment block; live in an apartment block", "notes": ""}, {"word": "one-storey", "ipa": "/ˌwʌn ˈstɔːri/", "category": "Listening", "source": "C21T4", "meaning": "adj. 单层的", "forms": "storey", "collocations": "one-storey building; one-storey house", "notes": ""}, {"word": "interact", "ipa": "/ˌɪntərˈækt/", "category": "Listening", "source": "C21T4", "meaning": "v. 互动；交流；相互作用", "forms": "interaction; interactive", "collocations": "interact with others; social interaction; interact directly", "notes": ""}, {"word": "generate", "ipa": "/ˈdʒenəreɪt/", "category": "Listening", "source": "C21T4", "meaning": "v. 产生；生成；引起", "forms": "generation; generator; generative", "collocations": "generate income; generate electricity; generate interest", "notes": ""}, {"word": "design", "ipa": "/dɪˈzaɪn/", "category": "Listening", "source": "C21T4", "meaning": "n. 设计；图案；v. 设计", "forms": "designer; designed", "collocations": "design a building; product design; specially designed", "notes": ""}, {"word": "condition", "ipa": "/kənˈdɪʃn/", "category": "Listening", "source": "C21T4", "meaning": "n. 状况；条件；疾病；v. 使适应", "forms": "conditional; conditioning", "collocations": "medical condition; working conditions; under certain conditions", "notes": ""}, {"word": "encourage", "ipa": "/ɪnˈkʌrɪdʒ/", "category": "Listening", "source": "C21T4", "meaning": "v. 鼓励；促进", "forms": "encouragement; encouraging", "collocations": "encourage people to; strongly encourage; encourage participation", "notes": ""}, {"word": "pedestrianise", "ipa": "/pəˈdestriənaɪz/", "category": "Listening", "source": "C21T4", "meaning": "v. 将道路改为步行区", "forms": "pedestrianised; pedestrianisation", "collocations": "pedestrianise the city centre; pedestrianised street", "notes": ""}, {"word": "communal", "ipa": "/ˈkɒmjənl/", "category": "Listening", "source": "C21T4", "meaning": "adj. 公共的；共享的；集体的", "forms": "community", "collocations": "communal area; communal facilities; communal living", "notes": ""}, {"word": "undergo", "ipa": "/ˌʌndəˈɡəʊ/", "category": "Listening", "source": "C21T4", "meaning": "v. 经历；接受（治疗、手术等）", "forms": "underwent; undergone", "collocations": "undergo surgery; undergo treatment; undergo major changes", "notes": ""}, {"word": "surgical procedure", "ipa": "/ˈsɜːdʒɪkl prəˈsiːdʒə(r)/", "category": "Listening", "source": "C21T4", "meaning": "n. 外科手术；手术操作", "forms": "surgery; surgical", "collocations": "perform a surgical procedure; minor surgical procedure", "notes": ""}, {"word": "devote", "ipa": "/dɪˈvəʊt/", "category": "Listening", "source": "C21T4", "meaning": "v. 投入；致力于", "forms": "devotion; devoted", "collocations": "devote time to; devote oneself to; devote attention to", "notes": ""}, {"word": "post-surgical", "ipa": "/ˌpəʊst ˈsɜːdʒɪkl/", "category": "Listening", "source": "C21T4", "meaning": "adj. 术后的", "forms": "surgery; surgical", "collocations": "post-surgical care; post-surgical recovery", "notes": ""}, {"word": "trial", "ipa": "/ˈtraɪəl/", "category": "Listening", "source": "C21T4", "meaning": "n. 试验；审判；v. 试用；测试", "forms": "trialling; retrial", "collocations": "clinical trial; trial period; conduct a trial", "notes": ""}, {"word": "calm", "ipa": "/kɑːm/", "category": "Listening", "source": "C21T4", "meaning": "adj. 平静的；n. 平静；v. 使平静", "forms": "calming; calmly", "collocations": "remain calm; calm down; calming effect", "notes": ""}, {"word": "audible", "ipa": "/ˈɔːdəbl/", "category": "Listening", "source": "C21T4", "meaning": "adj. 听得见的", "forms": "audibility; audibly", "collocations": "clearly audible; barely audible", "notes": ""}, {"word": "anxiety", "ipa": "/æŋˈzaɪəti/", "category": "Listening", "source": "C21T4", "meaning": "n. 焦虑；担忧", "forms": "anxious; anxiously", "collocations": "reduce anxiety; cause anxiety; anxiety levels", "notes": ""}, {"word": "cross-check", "ipa": "/ˌkrɒs ˈtʃek/", "category": "Listening", "source": "C21T4", "meaning": "n. 交叉核对；v. 交叉核对", "forms": "", "collocations": "cross-check information; cross-check the results", "notes": ""}, {"word": "anaesthetic", "ipa": "/ˌænəsˈθetɪk/", "category": "Listening", "source": "C21T4", "meaning": "n. 麻醉剂；adj. 麻醉的", "forms": "anaesthetise; anaesthesia", "collocations": "local anaesthetic; general anaesthetic; administer an anaesthetic", "notes": ""}, {"word": "awake", "ipa": "/əˈweɪk/", "category": "Listening", "source": "C21T4", "meaning": "adj. 醒着的；v. 唤醒", "forms": "awaken; awakening", "collocations": "stay awake; fully awake", "notes": ""}, {"word": "distraction", "ipa": "/dɪˈstrækʃn/", "category": "Listening", "source": "C21T4", "meaning": "n. 分心；使人分心的事物", "forms": "distract; distracted", "collocations": "avoid distractions; provide a distraction; major distraction", "notes": ""}, {"word": "nature", "ipa": "/ˈneɪtʃə(r)/", "category": "Listening", "source": "C21T4", "meaning": "n. 自然；本质；性质", "forms": "natural; naturally", "collocations": "in nature; human nature; natural environment", "notes": ""}, {"word": "ward", "ipa": "/wɔːd/", "category": "Listening", "source": "C21T4", "meaning": "n. 病房；行政区", "forms": "", "collocations": "hospital ward; maternity ward; psychiatric ward", "notes": ""}, {"word": "volume", "ipa": "/ˈvɒljuːm/", "category": "Listening", "source": "C21T4", "meaning": "n. 音量；体积；册；总量", "forms": "", "collocations": "turn up the volume; high volume; sales volume", "notes": ""}, {"word": "hyacinth", "ipa": "/ˈhaɪəsɪnθ/", "category": "Reading", "source": "C21T4", "meaning": "n. 风信子", "forms": "", "collocations": "water hyacinth", "notes": ""}, {"word": "aquatic", "ipa": "/əˈkwætɪk/", "category": "Reading", "source": "C21T4", "meaning": "adj. 水生的；水中的", "forms": "", "collocations": "aquatic plant; aquatic species; aquatic environment", "notes": ""}, {"word": "weed", "ipa": "/wiːd/", "category": "Reading", "source": "C21T4", "meaning": "n. 杂草；v. 除草", "forms": "weedy", "collocations": "aquatic weed; control weeds; weed growth", "notes": ""}, {"word": "obstruct", "ipa": "/əbˈstrʌkt/", "category": "Reading", "source": "C21T4", "meaning": "v. 阻碍；堵塞；妨碍", "forms": "obstruction; obstructive", "collocations": "obstruct traffic; obstruct rivers; obstruct development", "notes": ""}, {"word": "dam", "ipa": "/dæm/", "category": "Reading", "source": "C21T4", "meaning": "n. 水坝；v. 筑坝", "forms": "", "collocations": "build a dam; hydroelectric dam; dam construction", "notes": ""}, {"word": "colonist", "ipa": "/ˈkɒlənɪst/", "category": "Reading", "source": "C21T4", "meaning": "n. 殖民者；殖民地居民", "forms": "colonise; colony; colonial", "collocations": "European colonists; early colonists", "notes": ""}, {"word": "glossy", "ipa": "/ˈɡlɒsi/", "category": "Reading", "source": "C21T4", "meaning": "adj. 光滑发亮的；精美印刷的", "forms": "gloss", "collocations": "glossy leaves; glossy surface; glossy magazine", "notes": ""}, {"word": "predator", "ipa": "/ˈpredətə(r)/", "category": "Reading", "source": "C21T4", "meaning": "n. 捕食者；掠夺者", "forms": "predatory", "collocations": "natural predator; top predator; predator species", "notes": ""}, {"word": "shore", "ipa": "/ʃɔː(r)/", "category": "Reading", "source": "C21T4", "meaning": "n. 岸；滨", "forms": "shoreline", "collocations": "along the shore; lake shore; reach the shore", "notes": ""}, {"word": "charcoal", "ipa": "/ˈtʃɑːkəʊl/", "category": "Reading", "source": "C21T4", "meaning": "n. 木炭；炭笔", "forms": "", "collocations": "charcoal production; charcoal fuel; burn charcoal", "notes": ""}, {"word": "demographic", "ipa": "/ˌdeməˈɡræfɪk/", "category": "Reading", "source": "C21T4", "meaning": "adj. 人口统计的；n. 特定人群", "forms": "demography", "collocations": "demographic change; demographic data; demographic profile", "notes": ""}, {"word": "waxy", "ipa": "/ˈwæksi/", "category": "Reading", "source": "C21T4", "meaning": "adj. 蜡质的；像蜡的", "forms": "wax", "collocations": "waxy leaves; waxy surface", "notes": ""}, {"word": "nitrogen", "ipa": "/ˈnaɪtrədʒən/", "category": "Reading", "source": "C21T4", "meaning": "n. 氮", "forms": "nitrogenous", "collocations": "nitrogen levels; nitrogen cycle; nitrogen-rich soil", "notes": ""}, {"word": "captivate", "ipa": "/ˈkæptɪveɪt/", "category": "Reading", "source": "C21T4", "meaning": "v. 吸引；迷住", "forms": "captivating; captivated", "collocations": "captivate an audience; captivate readers", "notes": ""}, {"word": "biofuel", "ipa": "/ˈbaɪəʊfjuːəl/", "category": "Reading", "source": "C21T4", "meaning": "n. 生物燃料", "forms": "", "collocations": "biofuel production; biofuel industry; produce biofuel", "notes": ""}, {"word": "manure", "ipa": "/məˈnjʊə(r)/", "category": "Reading", "source": "C21T4", "meaning": "n. 粪肥；v. 给……施肥", "forms": "", "collocations": "animal manure; organic manure; use manure", "notes": ""}, {"word": "menace", "ipa": "/ˈmenəs/", "category": "Reading", "source": "C21T4", "meaning": "n. 威胁；危险人物；v. 威胁", "forms": "menacing", "collocations": "pose a menace; public menace; menace to society", "notes": ""}, {"word": "epidemiologist", "ipa": "/ˌepɪdiːmiˈɒlədʒɪst/", "category": "Reading", "source": "C21T4", "meaning": "n. 流行病学家", "forms": "epidemiology; epidemiological", "collocations": "public health epidemiologist; leading epidemiologist", "notes": ""}, {"word": "kerosene", "ipa": "/ˈkerəsiːn/", "category": "Reading", "source": "C21T4", "meaning": "n. 煤油", "forms": "", "collocations": "kerosene lamp; kerosene fuel; burn kerosene", "notes": ""}, {"word": "bustling", "ipa": "/ˈbʌslɪŋ/", "category": "Reading", "source": "C21T4", "meaning": "adj. 熙熙攘攘的；繁忙的", "forms": "bustle", "collocations": "bustling city; bustling streets; bustling market", "notes": ""}, {"word": "rickshaw", "ipa": "/ˈrɪkʃɔː/", "category": "Reading", "source": "C21T4", "meaning": "n. 人力车；三轮车", "forms": "", "collocations": "cycle rickshaw; take a rickshaw", "notes": ""}, {"word": "multitude", "ipa": "/ˈmʌltɪtjuːd/", "category": "Reading", "source": "C21T4", "meaning": "n. 大量；众多", "forms": "", "collocations": "a multitude of; large multitude", "notes": ""}, {"word": "multilingualism", "ipa": "/ˌmʌltiˈlɪŋɡwəlɪzəm/", "category": "Reading", "source": "C21T4", "meaning": "n. 多语言现象；多语制", "forms": "multilingual", "collocations": "promote multilingualism; multilingual education", "notes": ""}, {"word": "multiliteracy", "ipa": "/ˌmʌltiˈlɪtərəsi/", "category": "Reading", "source": "C21T4", "meaning": "n. 多元读写能力", "forms": "multiliterate", "collocations": "develop multiliteracy; multiliteracy education", "notes": ""}, {"word": "disproportionately", "ipa": "/ˌdɪsprəˈpɔːʃənətli/", "category": "Reading", "source": "C21T4", "meaning": "adv. 不成比例地；过度地", "forms": "disproportionate; disproportion", "collocations": "disproportionately affected; disproportionately high", "notes": ""}, {"word": "slum", "ipa": "/slʌm/", "category": "Reading", "source": "C21T4", "meaning": "n. 贫民窟", "forms": "", "collocations": "urban slum; slum area; slum dwellers", "notes": ""}, {"word": "embark", "ipa": "/ɪmˈbɑːk/", "category": "Reading", "source": "C21T4", "meaning": "v. 开始；着手；上船", "forms": "embarkation", "collocations": "embark on a project; embark on a journey", "notes": ""}, {"word": "preliminary", "ipa": "/prɪˈlɪmɪnəri/", "category": "Reading", "source": "C21T4", "meaning": "adj. 初步的；预备的；n. 初赛", "forms": "preliminarily", "collocations": "preliminary results; preliminary study; preliminary findings", "notes": ""}, {"word": "uniformity", "ipa": "/ˌjuːnɪˈfɔːməti/", "category": "Reading", "source": "C21T4", "meaning": "n. 一致性；统一性", "forms": "uniform", "collocations": "lack of uniformity; achieve uniformity", "notes": ""}, {"word": "tailor", "ipa": "/ˈteɪlə(r)/", "category": "Reading", "source": "C21T4", "meaning": "n. 裁缝；v. 定制；使适合", "forms": "tailored", "collocations": "tailor something to; tailored solution; tailor a programme", "notes": ""}, {"word": "minister", "ipa": "/ˈmɪnɪstə(r)/", "category": "Reading", "source": "C21T4", "meaning": "n. 部长；牧师", "forms": "ministry; ministerial", "collocations": "government minister; prime minister; education minister", "notes": ""}, {"word": "attenuate", "ipa": "/əˈtenjueɪt/", "category": "Reading", "source": "C21T4", "meaning": "v. 减轻；削弱", "forms": "attenuation", "collocations": "attenuate risk; attenuate the effect", "notes": ""}, {"word": "obsessive", "ipa": "/əbˈsesɪv/", "category": "Reading", "source": "C21T4", "meaning": "adj. 痴迷的；强迫性的", "forms": "obsess; obsession; obsessively", "collocations": "obsessive behaviour; obsessive interest", "notes": ""}, {"word": "flatten", "ipa": "/ˈflætn/", "category": "Reading", "source": "C21T4", "meaning": "v. 压平；使平坦；变平", "forms": "flat; flattened", "collocations": "flatten the surface; flatten the curve", "notes": ""}, {"word": "circumference", "ipa": "/səˈkʌmfərəns/", "category": "Reading", "source": "C21T4", "meaning": "n. 圆周；周长", "forms": "", "collocations": "measure the circumference; waist circumference", "notes": ""}];
+let words = JSON.parse(localStorage.getItem('professionalVocabWords') || 'null') || SAMPLE;
+let editIndex = null;
+let currentDictation = null;
+let currentFlashcard = null;
+let attempts = Number(localStorage.getItem('dictAttempts') || 0);
+let correct = Number(localStorage.getItem('dictCorrect') || 0);
+
+document.querySelectorAll('.tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+['search','categoryFilter','sourceFilter'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+
+function escapeHTML(value){
+  return String(value || '').replace(/[&<>"']/g, char => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[char]));
+}
+function persist(){
+  localStorage.setItem('professionalVocabWords', JSON.stringify(words));
+  render();
+}
+function render(){
+  const q = search.value.toLowerCase();
+  const category = categoryFilter.value;
+  const source = sourceFilter.value.toLowerCase();
+
+  const filtered = words.filter(w =>
+    (!category || w.category === category) &&
+    (!source || (w.source || '').toLowerCase().includes(source)) &&
+    (!q || [w.word,w.ipa,w.meaning,w.forms,w.collocations,w.notes].join(' ').toLowerCase().includes(q))
+  );
+
+  wordRows.innerHTML = filtered.map(w => {
+    const i = words.indexOf(w);
+    return `<tr>
+      <td><div class="word">${escapeHTML(w.word)}</div><div class="ipa">${escapeHTML(w.ipa)}</div><button class="speak" onclick="event.stopPropagation();speakWord('${w.word.replace(/'/g,"\\'")}')">🔊 英式发音</button></td>
+      <td><span class="badge ${w.category === 'Reading' ? 'reading' : ''}">${escapeHTML(w.category)}</span><div class="small">${escapeHTML(w.source)}</div></td>
+      <td>${escapeHTML(w.meaning)}</td>
+      <td>${escapeHTML(w.forms)}</td>
+      <td>${escapeHTML(w.collocations)}</td>
+      <td>
+        <button class="secondary" onclick="openEditor(${i})">编辑</button>
+        <button class="danger" onclick="deleteWord(${i})">删除</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  totalStat.textContent = words.length;
+  listeningStat.textContent = words.filter(w => w.category === 'Listening').length;
+  readingStat.textContent = words.filter(w => w.category === 'Reading').length;
+  scoreStat.textContent = attempts ? Math.round(correct / attempts * 100) + '%' : '—';
+}
+function openEditor(index = null){
+  editIndex = index;
+  const w = index === null ? {
+    word:'', ipa:'', category:'Listening', source:'C21T4', meaning:'', forms:'', collocations:'', notes:''
+  } : words[index];
+
+  editorTitle.textContent = index === null ? '添加生词' : '编辑生词';
+  fWord.value = w.word; fIpa.value = w.ipa; fCategory.value = w.category; fSource.value = w.source || '';
+  fMeaning.value = w.meaning; fForms.value = w.forms || ''; fCollocations.value = w.collocations || ''; fNotes.value = w.notes || '';
+  editorModal.classList.add('show');
+}
+function closeEditor(){ editorModal.classList.remove('show'); }
+function saveWord(){
+  if(!fWord.value.trim()) return alert('请填写单词');
+  const w = {
+    word:fWord.value.trim(), ipa:fIpa.value.trim(), category:fCategory.value,
+    source:fSource.value.trim(), meaning:fMeaning.value.trim(), forms:fForms.value.trim(),
+    collocations:fCollocations.value.trim(), notes:fNotes.value.trim()
+  };
+  if(editIndex === null) words.unshift(w); else words[editIndex] = w;
+  closeEditor();
+  persist();
+}
+function deleteWord(index){
+  if(confirm('确定删除这个单词吗？')){
+    words.splice(index,1);
+    persist();
+  }
+}
+function getPool(category){
+  return words.filter(w => !category || w.category === category);
+}
+function nextDictation(){
+  const pool = getPool(dictCategory.value);
+  if(!pool.length) return alert('当前分类没有单词');
+  currentDictation = pool[Math.floor(Math.random() * pool.length)];
+  const mode = dictMode.value;
+  if(mode === 'audio'){ dictPrompt.textContent = '🔊 请听发音并写出单词'; speakWord(currentDictation.word); } else { dictPrompt.textContent = currentDictation[mode] || currentDictation.meaning; }
+  dictAnswer.value = '';
+  dictResult.textContent = '';
+  dictAnswer.focus();
+}
+function checkDictation(){
+  if(!currentDictation) return nextDictation();
+  attempts++;
+  const isCorrect = dictAnswer.value.trim().toLowerCase() === currentDictation.word.toLowerCase();
+  if(isCorrect){
+    correct++;
+    dictResult.className = 'result correct';
+    dictResult.textContent = '✓ 正确：' + currentDictation.word + ' ' + currentDictation.ipa;
+  }else{
+    dictResult.className = 'result wrong';
+    dictResult.textContent = '✗ 正确答案：' + currentDictation.word + ' ' + currentDictation.ipa;
+  }
+  localStorage.setItem('dictAttempts', attempts);
+  localStorage.setItem('dictCorrect', correct);
+  render();
+}
+function nextFlashcard(){
+  const pool = getPool(flashCategory.value);
+  if(!pool.length) return alert('当前分类没有单词');
+  currentFlashcard = pool[Math.floor(Math.random() * pool.length)];
+  flashWord.textContent = currentFlashcard.word;
+  flashIpa.textContent = currentFlashcard.ipa;
+  flashMeaning.textContent = currentFlashcard.meaning;
+  flashCollocations.textContent = 'Collocations: ' + (currentFlashcard.collocations || '—');
+  flashFront.classList.remove('hidden');
+  flashBack.classList.add('hidden');
+}
+function flipFlashcard(){
+  if(!currentFlashcard) return;
+  flashFront.classList.toggle('hidden');
+  flashBack.classList.toggle('hidden');
+}
+function downloadFile(name, content, type){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], {type}));
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportJSON(){
+  downloadFile('vocabulary-backup.json', JSON.stringify(words,null,2), 'application/json');
+}
+function exportCSV(){
+  const cols = ['word','ipa','category','source','meaning','forms','collocations','notes'];
+  const quote = v => '"' + String(v || '').replace(/"/g,'""') + '"';
+  const csv = [cols.join(','), ...words.map(w => cols.map(c => quote(w[c])).join(','))].join('\n');
+  downloadFile('vocabulary.csv', csv, 'text/csv;charset=utf-8');
+}
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error();
+      words = data;
+      persist();
+      alert('导入成功');
+    }catch{
+      alert('JSON 文件格式不正确');
+    }
+  };
+  reader.readAsText(file);
+}
+function resetSample(){
+  if(confirm('这会覆盖当前数据，确定吗？')){
+    words = SAMPLE;
+    persist();
+  }
+}
+
+function getEnglishVoice(){
+  const voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+  return voices.find(v => v.lang === 'en-GB') ||
+         voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en-gb')) ||
+         voices.find(v => v.lang && v.lang.toLowerCase().startsWith('en')) ||
+         voices[0];
+}
+function speakWord(word){
+  if(!('speechSynthesis' in window)){
+    alert('当前浏览器不支持语音朗读，请使用 Chrome、Edge 或 Safari。');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'en-GB';
+  utterance.rate = 0.82;
+  utterance.pitch = 1;
+  const voice = getEnglishVoice();
+  if(voice) utterance.voice = voice;
+  window.speechSynthesis.speak(utterance);
+}
+function speakCurrentFlashcard(){
+  if(currentFlashcard) speakWord(currentFlashcard.word);
+}
+if('speechSynthesis' in window){
+  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+}
+
+render();
+</script>
+</body>
+</html>
